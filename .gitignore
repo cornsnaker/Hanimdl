@@ -1,0 +1,8 @@
+node_modules/
+lib/
+*.log
+.env
+config/*.yml
+!config/cli-defaults.yml
+!config/dir-path.yml
+!config/bin-path.yml
