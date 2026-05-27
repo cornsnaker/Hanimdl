@@ -162,12 +162,10 @@ export default class Hidive {
 	}
 
 	public async doAuth(data: AuthData): Promise<AuthResponse> {
-		if (!this.token.refreshToken || !this.token.authorisationToken) {
-			const anonResult = await this.doAnonymousAuth();
-			if (!anonResult) {
-				console.error('Anonymous auth failed — Hidive may be geo-blocked in your region. Try using a proxy (--proxy).');
-				return { isOk: false, reason: new Error('Anonymous authentication failed (possible geo-restriction)') };
-			}
+		const anonResult = await this.doAnonymousAuth();
+		if (!anonResult) {
+			console.error('Anonymous auth failed — Hidive may be geo-blocked in your region. Try using a proxy (--proxy).');
+			return { isOk: false, reason: new Error('Anonymous authentication failed (possible geo-restriction)') };
 		}
 		const authReq = await this.apiReq(
 			'/v2/login',
