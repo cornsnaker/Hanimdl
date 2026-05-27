@@ -75,9 +75,9 @@ async function buildBinary(buildType: BuildTypes) {
 	fs.mkdirSync(`${buildDir}/videos`, { recursive: true });
 	fs.mkdirSync(`${buildDir}/widevine`, { recursive: true });
 	fs.mkdirSync(`${buildDir}/playready`, { recursive: true });
-	fs.copyFileSync('./config/cli-defaults.yml', `${buildDir}/config/cli-defaults.yml`);
-	fs.copyFileSync('./config/dir-path.yml', `${buildDir}/config/dir-path.yml`);
-	fs.copyFileSync('./package.json', `${buildDir}/package.json`);
+	fs.copyFileSync('../config/cli-defaults.yml', `${buildDir}/config/cli-defaults.yml`);
+	fs.copyFileSync('../config/dir-path.yml', `${buildDir}/config/dir-path.yml`);
+	fs.copyFileSync('../package.json', `${buildDir}/package.json`);
 
 	if (fs.existsSync(`${buildsDir}/${buildFull}.7z`)) {
 		fs.unlinkSync(`${buildsDir}/${buildFull}.7z`);
