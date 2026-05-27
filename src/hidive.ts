@@ -63,7 +63,8 @@ export default class Hidive {
 			const selected = await this.selectSeason(parseInt(argv.s), argv.e, argv.but, argv.all);
 			if (selected.isOk && selected.showData) {
 				for (const select of selected.value) {
-					if (!(await this.downloadEpisode(select, { ...argv }))) {
+					const result = await this.downloadEpisode(select, { ...argv });
+					if (!result || !result.isOk) {
 						console.error(`Unable to download selected episode ${select.episodeInformation.episodeNumber}`);
 						return false;
 					}
@@ -73,7 +74,8 @@ export default class Hidive {
 		} else if (argv.new) {
 			console.error('--new is not yet implemented in the new API');
 		} else if (argv.e) {
-			if (!(await this.downloadSingleEpisode(parseInt(argv.e), { ...argv }))) {
+			const result = await this.downloadSingleEpisode(parseInt(argv.e), { ...argv });
+			if (!result || !result.isOk) {
 				console.error(`Unable to download selected episode ${argv.e}`);
 				return false;
 			}
@@ -901,6 +903,14 @@ export default class Hidive {
 					} else {
 						console.warn('mp4decrypt/shaka not found, files need decryption. Decryption Keys:', encryptionKeys);
 					}
+				} else {
+					fs.renameSync(`${tempTsFile}.video.enc.m4s`, `${tsFile}.video.m4s`);
+					files.push({
+						type: 'Video',
+						path: `${tsFile}.video.m4s`,
+						lang: chosenAudios[0].language,
+						isPrimary: true
+					});
 				}
 			}
 		} else {
@@ -992,6 +1002,14 @@ export default class Hidive {
 					} else {
 						console.warn('mp4decrypt not found, files need decryption. Decryption Keys:', encryptionKeys);
 					}
+				} else {
+					fs.renameSync(`${tempTsFile}.audio.enc.m4s`, `${tsFile}.audio.m4s`);
+					files.push({
+						type: 'Audio',
+						path: `${tsFile}.audio.m4s`,
+						lang: chosenAudioSegments.language,
+						isPrimary: chosenAudioSegments.default
+					});
 				}
 			}
 		} else {
@@ -1037,7 +1055,7 @@ export default class Hidive {
 
 							if (!options.noASSConv) {
 								sBody = vtt2ass(undefined, chosenFontSize, sBody, '', subsMargin, options.fontName, options.combineLines);
-								sxData.title = `${subLang.language} / ${sxData.title}`;
+								sxData.title = subLang.language ?? '';
 								sxData.fonts = fontsData.assFonts(sBody) as Font[];
 								console.info(`Subtitle converted: ${sxData.file}`);
 							} else {

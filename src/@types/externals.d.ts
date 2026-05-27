@@ -20,3 +20,8 @@ declare module 'iso-639' {
 declare module 'mpd-parser' {
 	export function parse(mpdXml: string, options?: any): any;
 }
+
+declare module 'removeNPMAbsolutePaths' {
+	function removeNPMAbsolutePaths(dirPath: string, options?: any): Promise<any>;
+	export default removeNPMAbsolutePaths;
+}

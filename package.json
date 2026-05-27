@@ -1,5 +1,6 @@
 {
 	"name": "hanimdl",
+	"short_name": "hanimdl",
 	"version": "1.0.0",
 	"description": "Standalone CLI downloader for Hidive with VTT-to-ASS subtitle conversion",
 	"keywords": ["download", "downloader", "hidive", "cli", "anime"],
@@ -31,11 +32,23 @@
 	},
 	"devDependencies": {
 		"@types/node": "^25.9.0",
+		"@yao-pkg/pkg": "^6.5.0",
+		"esbuild": "^0.25.0",
+		"removeNPMAbsolutePaths": "^3.0.1",
 		"typescript": "^5.9.3"
 	},
 	"scripts": {
 		"build": "tsc",
 		"start": "node lib/index.js",
-		"dev": "ts-node src/index.ts"
+		"dev": "ts-node src/index.ts",
+		"prebuild-cli": "tsc",
+		"build-windows-x64-cli": "npm run prebuild-cli && cd lib && node modules/build windows-x64",
+		"build-windows-arm64-cli": "npm run prebuild-cli && cd lib && node modules/build windows-arm64",
+		"build-linux-x64-cli": "npm run prebuild-cli && cd lib && node modules/build linuxstatic-x64",
+		"build-linux-arm64-cli": "npm run prebuild-cli && cd lib && node modules/build linuxstatic-arm64",
+		"build-macos-x64-cli": "npm run prebuild-cli && cd lib && node modules/build macos-x64",
+		"build-macos-arm64-cli": "npm run prebuild-cli && cd lib && node modules/build macos-arm64",
+		"build-alpine-x64-cli": "npm run prebuild-cli && cd lib && node modules/build alpine-x64",
+		"build-alpine-arm64-cli": "npm run prebuild-cli && cd lib && node modules/build alpine-arm64"
 	}
 }
