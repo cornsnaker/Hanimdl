@@ -25,7 +25,7 @@ const api: APIType = {
 	hd_api: `${domain.hd_api}/api/v1`,
 	hd_new_api: `${domain.hd_new}/api`,
 	hd_new_apiKey: '857a1e5d-e35e-4fdf-805b-a87b6f8364bf',
-	hd_new_version: '6.0.1.bbf09a2'
+	hd_new_version: '6.58.0.a0c6b52'
 };
 
 export { domain, api };

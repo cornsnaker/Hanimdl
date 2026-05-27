@@ -96,6 +96,9 @@ export default class Hidive {
 				'X-Api-Key': api.hd_new_apiKey,
 				'X-App-Var': api.hd_new_version,
 				realm: 'dce.hidive',
+				app: 'dice',
+				'accept-language': 'en-US',
+				accept: 'application/json, text/plain, */*',
 				Referer: 'https://www.hidive.com/',
 				Origin: 'https://www.hidive.com'
 			} as Record<string, unknown>,
