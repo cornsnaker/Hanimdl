@@ -41,9 +41,6 @@ export default class Hidive {
 		this.cfg = yamlCfg.loadCfg();
 		this.token = yamlCfg.loadNewHDToken();
 		this.req = new reqModule.Req();
-		if (this.token.proxy && !this.req.argv.proxy) {
-			this.req.argv.proxy = this.token.proxy as string;
-		}
 	}
 
 	public async cli() {
@@ -198,10 +195,11 @@ export default class Hidive {
 			this.token[token] = tokens[token];
 		}
 		this.token.guest = false;
-		if (this.req.argv.proxy) {
-			this.token.proxy = this.req.argv.proxy;
-		}
 		yamlCfg.saveNewHDToken(this.token);
+		if (this.req.argv.proxy) {
+			yamlCfg.saveCliDefault('proxy', this.req.argv.proxy);
+			console.info('Proxy saved to config for future commands.');
+		}
 		console.info('Auth complete!');
 		return { isOk: true, value: undefined };
 	}

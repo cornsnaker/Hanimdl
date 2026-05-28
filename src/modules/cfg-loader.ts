@@ -236,6 +236,25 @@ const saveNewHDToken = (data: Record<string, unknown>) => {
 
 const cfgDir = path.join(workingDir, 'config');
 
+const saveCliDefault = (key: string, value: unknown) => {
+	const cfgFile = `${cliCfgFile}.yml`;
+	let cfg: Record<string, unknown> = {};
+	if (fs.existsSync(cfgFile)) {
+		try {
+			cfg = yaml.parse(fs.readFileSync(cfgFile, 'utf8')) || {};
+		} catch {
+			cfg = {};
+		}
+	}
+	cfg[key] = value;
+	try {
+		fs.mkdirSync(path.dirname(cfgFile), { recursive: true });
+		fs.writeFileSync(cfgFile, yaml.stringify(cfg));
+	} catch (e) {
+		console.error("Can't save CLI defaults to disk!");
+	}
+};
+
 export {
 	loadBinCfg,
 	loadCfg,
@@ -247,5 +266,6 @@ export {
 	loadNewHDToken,
 	saveHDProfile,
 	loadHDProfile,
+	saveCliDefault,
 	cfgDir
 };
