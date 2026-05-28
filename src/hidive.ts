@@ -71,6 +71,17 @@ export default class Hidive {
 				}
 			}
 			return true;
+		} else if (argv.srz && !isNaN(parseInt(argv.srz, 10)) && parseInt(argv.srz, 10) > 0) {
+			const selected = await this.selectSeries(parseInt(argv.srz), argv.e, argv.but, argv.all);
+			if (selected.isOk && selected.showData) {
+				for (const select of selected.value) {
+					const result = await this.downloadEpisode(select, { ...argv });
+					if (!result || !result.isOk) {
+						console.error(`Unable to download selected episode ${select.episodeInformation.episodeNumber}`);
+						return false;
+					}
+				}
+			}
 		} else if (argv.new) {
 			console.error('--new is not yet implemented in the new API');
 		} else if (argv.e) {

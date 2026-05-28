@@ -88,6 +88,15 @@ const args: TAppArg<boolean | number | string | unknown[]>[] = [
 		usage: '${ID}'
 	},
 	{
+		name: 'srz',
+		group: 'dl',
+		type: 'string',
+		describe: 'Set the series ID',
+		docDescribe: 'Used to set the series ID to download from',
+		service: ['all'],
+		usage: '${ID}'
+	},
+	{
 		name: 'e',
 		group: 'dl',
 		describe: 'Set the episode(s) to download from any given show',
