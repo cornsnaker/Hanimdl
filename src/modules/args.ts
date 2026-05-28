@@ -79,11 +79,22 @@ const args: TAppArg<boolean | number | string | unknown[]>[] = [
 		usage: ''
 	},
 	{
+		name: 'series',
+		group: 'dl',
+		alias: 'srz',
+		type: 'string',
+		describe: 'Get season list by series ID',
+		docDescribe:
+			'Provide a series ID (the `Z.<id>` shown by --search) to enumerate every season ' + 'and download the requested episodes across all of them.',
+		service: ['hidive'],
+		usage: '${ID}'
+	},
+	{
 		name: 's',
 		group: 'dl',
 		type: 'string',
 		describe: 'Set the season ID',
-		docDescribe: 'Used to set the season ID to download from',
+		docDescribe: 'Used to set the season ID to download from. For a series ID (`Z.<id>`), use --srz instead.',
 		service: ['all'],
 		usage: '${ID}'
 	},
