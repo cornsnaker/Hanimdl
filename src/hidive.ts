@@ -41,6 +41,9 @@ export default class Hidive {
 		this.cfg = yamlCfg.loadCfg();
 		this.token = yamlCfg.loadNewHDToken();
 		this.req = new reqModule.Req();
+		if (this.token.proxy && !this.req.argv.proxy) {
+			this.req.argv.proxy = this.token.proxy as string;
+		}
 	}
 
 	public async cli() {
@@ -195,13 +198,30 @@ export default class Hidive {
 			this.token[token] = tokens[token];
 		}
 		this.token.guest = false;
+		if (this.req.argv.proxy) {
+			this.token.proxy = this.req.argv.proxy;
+		}
 		yamlCfg.saveNewHDToken(this.token);
 		console.info('Auth complete!');
 		return { isOk: true, value: undefined };
 	}
 
 	public async doAnonymousAuth() {
-		const authReq = await this.apiReq('/v2/login/guest/checkin');
+		const useProxy = !!(this.req.argv.proxy);
+		const authReq = await this.req.getData(api.hd_new_api + '/v2/login/guest/checkin', {
+			method: 'POST',
+			headers: {
+				'X-Api-Key': api.hd_new_apiKey,
+				'X-App-Var': api.hd_new_version,
+				realm: 'dce.hidive',
+				app: 'dice',
+				'accept-language': 'en-US',
+				accept: 'application/json, text/plain, */*',
+				Referer: 'https://www.hidive.com/',
+				Origin: 'https://www.hidive.com'
+			},
+			useProxy: useProxy
+		});
 		if (!authReq.ok || !authReq.res) {
 			console.error('Authentication failed!');
 			return false;

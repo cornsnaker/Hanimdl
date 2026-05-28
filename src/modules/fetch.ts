@@ -118,7 +118,7 @@ export class Req {
 
 			if (!url.hostname) return false;
 
-			if (!['http:', 'https:'].includes(url.protocol)) {
+			if (!['http:', 'https:', 'socks4:', 'socks5:'].includes(url.protocol)) {
 				return false;
 			}
 
