@@ -199,6 +199,21 @@ const args: TAppArg<boolean | number | string | unknown[]>[] = [
 		}
 	},
 	{
+		name: 'noChapters',
+		group: 'mux',
+		describe: 'Skip writing chapter data (intro / recap / credits) into the muxed file.',
+		docDescribe:
+			'By default Hanimdl converts the HIDIVE `skipMarkers` returned with the playback ' +
+			'data into a chapter file and passes it to mkvmerge / ffmpeg so the muxed output ' +
+			'has Recap / Intro / Episode / Credits chapter marks. Pass --noChapters to disable.',
+		service: ['all'],
+		type: 'boolean',
+		usage: '',
+		default: {
+			default: false
+		}
+	},
+	{
 		name: 'novids',
 		group: 'dl',
 		describe: 'Skip downloading videos',

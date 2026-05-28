@@ -67,6 +67,7 @@ export let argvC: {
 	syncTiming: boolean;
 	callbackMaker?: (data: DownloadInfo) => HLSCallback;
 	noASSConv: boolean;
+	noChapters: boolean;
 	proxy: string;
 	proxyAll: boolean;
 };

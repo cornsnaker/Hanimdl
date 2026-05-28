@@ -67,11 +67,13 @@ const subtitleLanguagesFilter = (() => {
 	const subtitleLanguagesExtraParameters = ['all', 'none'];
 	return [
 		...subtitleLanguagesExtraParameters,
-		...new Set(
-			languages.map((l) => {
-				return l.locale;
-			})
-		)
+		...new Set([
+			...languages.map((l) => l.locale),
+			// Also accept codes (e.g. `eng`, `jpn`) so users can use the same identifier
+			// they pass to --dubLang. The runtime matcher in hidive.ts already accepts
+			// either; advertise both here so the help text and validation reflect that.
+			...languages.map((l) => l.code)
+		])
 	];
 })();
 

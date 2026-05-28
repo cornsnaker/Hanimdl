@@ -10,6 +10,7 @@ import * as fontsData from './modules/fontsData';
 import * as langsData from './modules/langsData';
 import * as yamlCfg from './modules/cfg-loader';
 import * as yargs from './modules/app-args';
+import { buildChapterFileFromSkipMarkers } from './modules/ffmpegChapter';
 import Merger, { Font, MergerInput, SubtitleInput } from './modules/merger';
 import vtt2ass from './modules/vtt2ass';
 import Helper from './modules/helper';
@@ -606,7 +607,7 @@ export default class Hidive {
 		console.info(`[INFO] Selected dub(s): ${options.dubLang.join(', ')}`);
 		const baseUrl = playbackData.dash[0].url.split('master')[0];
 		const parsedmpd = await parse(mpd, undefined, baseUrl);
-		const res = await this.downloadMPD(parsedmpd, availableSubs, selectedEpisode, options);
+		const res = await this.downloadMPD(parsedmpd, availableSubs, selectedEpisode, options, playbackData.skipMarkers);
 		if (res === undefined || res.error) {
 			console.error('Failed to download media list');
 			return { isOk: false, reason: new Error('Failed to download media list') };
@@ -692,7 +693,7 @@ export default class Hidive {
 		console.info(`[INFO] Selected dub(s): ${options.dubLang.join(', ')}`);
 		const baseUrl = playbackData.dash[0].url.split('master')[0];
 		const parsedmpd = await parse(mpd, undefined, baseUrl);
-		const res = await this.downloadMPD(parsedmpd, availableSubs, selectedEpisode, options);
+		const res = await this.downloadMPD(parsedmpd, availableSubs, selectedEpisode, options, playbackData.skipMarkers);
 		if (res === undefined || res.error) {
 			console.error('Failed to download media list');
 			return { isOk: false, reason: new Error('Failed to download media list') };
@@ -711,7 +712,13 @@ export default class Hidive {
 		}
 	}
 
-	public async downloadMPD(streamPlaylists: MPDParsed, subs: Subtitle[], selectedEpisode: NewHidiveEpisodeExtra, options: Record<any, any>) {
+	public async downloadMPD(
+		streamPlaylists: MPDParsed,
+		subs: Subtitle[],
+		selectedEpisode: NewHidiveEpisodeExtra,
+		options: Record<any, any>,
+		skipMarkers?: import('./@types/newHidivePlayback').SkipMarker[]
+	) {
 		const files: DownloadedMedia[] = [];
 		const variables: Variable[] = [];
 		let dlFailed = false;
@@ -1067,7 +1074,17 @@ export default class Hidive {
 						fs.mkdirSync(dirName, { recursive: true });
 					}
 					sxData.language = subLang;
-					if (options.dlsubs.includes('all') || options.dlsubs.includes(subLang.locale)) {
+					// Accept either the language `code` (`eng`, `jpn`, ...), the `locale`
+					// (`en`, `ja`, ...), the `cr_locale` (`en-US`) or the `new_hd_locale`
+					// (`en-US`) for --dlsubs. The user-facing flag advertises locales but
+					// --dubLang advertises codes, so users (and the GUI) routinely send
+					// codes here too. Matching all four prevents subtitles from being
+					// silently dropped when the user passes e.g. `--dlsubs eng`.
+					const requested = options.dlsubs as string[];
+					const subLangIdentifiers = [subLang.locale, subLang.code, subLang.cr_locale, subLang.new_hd_locale].filter(
+						(v): v is string => typeof v === 'string' && v.length > 0
+					);
+					if (requested.includes('all') || subLangIdentifiers.some((id) => requested.includes(id))) {
 						const getVttContent = await this.req.getData(sub.url);
 						if (getVttContent.ok && getVttContent.res) {
 							let sBody = await getVttContent.res.text();
@@ -1104,6 +1121,39 @@ export default class Hidive {
 			console.info('Subtitles downloading skipped!');
 		}
 
+		// HIDIVE returns intro / recap / credits markers as `skipMarkers` on the
+		// playback response. Convert them to an OGM/Matroska CHAPTER file and
+		// hand it off to the merger so the muxed output has chapter marks.
+		if (!options.noChapters) {
+			try {
+				const chapterBody = buildChapterFileFromSkipMarkers(skipMarkers);
+				if (chapterBody) {
+					const chapterFileName = `${fileName ?? 'unknown'}.chapters.txt`;
+					const chapterPath = path.isAbsolute(chapterFileName) ? chapterFileName : path.join(this.cfg.dir.content, chapterFileName);
+					const chapterDir = path.dirname(chapterPath);
+					if (!fs.existsSync(chapterDir)) {
+						fs.mkdirSync(chapterDir, { recursive: true });
+					}
+					fs.writeFileSync(chapterPath, chapterBody);
+					console.info(`Chapter file written: ${chapterPath}`);
+					files.push({
+						type: 'Chapter',
+						path: chapterPath,
+						lang: langsData.languages.find((l) => l.code === 'und') ?? {
+							locale: 'un',
+							code: 'und',
+							name: 'Undetermined',
+							language: 'Undetermined'
+						}
+					});
+				} else if (Array.isArray(skipMarkers) && skipMarkers.length > 0) {
+					console.warn('Skip markers were returned but could not be parsed into chapters.');
+				}
+			} catch (err) {
+				console.warn(`Failed to write chapter file: ${(err as Error).message}`);
+			}
+		}
+
 		return {
 			error: dlFailed,
 			data: files,
@@ -1122,6 +1172,7 @@ export default class Hidive {
 		const videoItems = data.filter((a): a is Extract<DownloadedMedia, { type: 'Video' }> => a.type === 'Video');
 		const audioItems = data.filter((a): a is Extract<DownloadedMedia, { type: 'Audio' }> => a.type === 'Audio');
 		const subtitleItems = data.filter((a): a is Extract<DownloadedMedia, { type: 'Subtitle' }> => a.type === 'Subtitle');
+		const chapterItems = data.filter((a): a is Extract<DownloadedMedia, { type: 'Chapter' }> => a.type === 'Chapter');
 		const merger = new Merger({
 			onlyVid: hasAudioStreams
 				? videoItems.map((a): MergerInput => ({ lang: a.lang, path: a.path }))
@@ -1140,6 +1191,7 @@ export default class Hidive {
 			})),
 			simul: videoItems.map((a): boolean => !a.uncut as boolean)[0],
 			fonts: Merger.makeFontsList(this.cfg.dir.fonts, subtitleItems as sxItem[]),
+			chapters: chapterItems.map((a): MergerInput => ({ lang: a.lang, path: a.path })),
 			videoAndAudio: hasAudioStreams
 				? []
 				: videoItems.map((a): MergerInput => ({ lang: a.lang, path: a.path })),
