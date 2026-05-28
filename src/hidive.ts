@@ -606,6 +606,16 @@ export default class Hidive {
 			console.error('Failed to download media list');
 			return { isOk: false, reason: new Error('Failed to download media list') };
 		} else {
+			if (options.chapters && playbackData.skipMarkers && playbackData.skipMarkers.length > 0) {
+				const chapterFile = this.generateChapters(playbackData.skipMarkers, episodeData.duration, res.fileName);
+				if (chapterFile) {
+					res.data.push({
+						type: 'Chapter',
+						path: chapterFile,
+						lang: langsData.languages.find((a) => a.code === 'eng') || langsData.languages[0]
+					});
+				}
+			}
 			if (!options.skipmux) {
 				await this.muxStreams(res.data, { ...options, output: res.fileName }, false);
 			} else {
@@ -618,6 +628,62 @@ export default class Hidive {
 			);
 			return { isOk: res, value: undefined };
 		}
+	}
+
+	private generateChapters(skipMarkers: { from: number; to: number; type: string }[], duration: number, fileName: string): string | undefined {
+		const compiledChapters: string[] = [];
+		const markers = [...skipMarkers].sort((a, b) => a.from - b.from);
+
+		const formatTime = (seconds: number): string => {
+			const h = Math.floor(seconds / 3600);
+			const m = Math.floor((seconds % 3600) / 60);
+			const s = Math.floor(seconds % 60);
+			const ms = Math.round((seconds % 1) * 100);
+			return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+		};
+
+		const typeName = (type: string): string => {
+			const map: Record<string, string> = {
+				intro: 'Intro',
+				opening: 'Opening',
+				outro: 'Outro',
+				ending: 'Ending',
+				recap: 'Recap',
+				preview: 'Preview'
+			};
+			return map[type.toLowerCase()] || type.charAt(0).toUpperCase() + type.slice(1);
+		};
+
+		if (markers.length === 0) return undefined;
+
+		if (markers[0].from > 1) {
+			compiledChapters.push(
+				`CHAPTER${compiledChapters.length / 2 + 1}=00:00:00.00`,
+				`CHAPTER${compiledChapters.length / 2 + 1}NAME=Episode`
+			);
+		}
+
+		for (let i = 0; i < markers.length; i++) {
+			const marker = markers[i];
+			compiledChapters.push(
+				`CHAPTER${compiledChapters.length / 2 + 1}=${formatTime(marker.from)}`,
+				`CHAPTER${compiledChapters.length / 2 + 1}NAME=${typeName(marker.type)}`
+			);
+			const nextStart = i + 1 < markers.length ? markers[i + 1].from : duration;
+			if (marker.to < nextStart - 1) {
+				compiledChapters.push(
+					`CHAPTER${compiledChapters.length / 2 + 1}=${formatTime(marker.to)}`,
+					`CHAPTER${compiledChapters.length / 2 + 1}NAME=Episode`
+				);
+			}
+		}
+
+		if (compiledChapters.length === 0) return undefined;
+
+		const chapterPath = `${fileName}.chapters.txt`;
+		fs.writeFileSync(chapterPath, compiledChapters.join('\n') + '\n');
+		console.info(`Chapters generated: ${compiledChapters.length / 2} markers`);
+		return chapterPath;
 	}
 
 	public async downloadSingleEpisode(id: number, options: Record<any, any>) {
@@ -692,6 +758,16 @@ export default class Hidive {
 			console.error('Failed to download media list');
 			return { isOk: false, reason: new Error('Failed to download media list') };
 		} else {
+			if (options.chapters && playbackData.skipMarkers && playbackData.skipMarkers.length > 0) {
+				const chapterFile = this.generateChapters(playbackData.skipMarkers, episodeData.duration, res.fileName);
+				if (chapterFile) {
+					res.data.push({
+						type: 'Chapter',
+						path: chapterFile,
+						lang: langsData.languages.find((a) => a.code === 'eng') || langsData.languages[0]
+					});
+				}
+			}
 			if (!options.skipmux) {
 				await this.muxStreams(res.data, { ...options, output: res.fileName }, false);
 			} else {
@@ -1062,7 +1138,7 @@ export default class Hidive {
 						fs.mkdirSync(dirName, { recursive: true });
 					}
 					sxData.language = subLang;
-					if (options.dlsubs.includes('all') || options.dlsubs.includes(subLang.locale)) {
+					if (options.dlsubs.includes('all') || options.dlsubs.includes(subLang.locale) || options.dlsubs.includes(subLang.code)) {
 						const getVttContent = await this.req.getData(sub.url);
 						if (getVttContent.ok && getVttContent.res) {
 							let sBody = await getVttContent.res.text();
@@ -1117,6 +1193,7 @@ export default class Hidive {
 		const videoItems = data.filter((a): a is Extract<DownloadedMedia, { type: 'Video' }> => a.type === 'Video');
 		const audioItems = data.filter((a): a is Extract<DownloadedMedia, { type: 'Audio' }> => a.type === 'Audio');
 		const subtitleItems = data.filter((a): a is Extract<DownloadedMedia, { type: 'Subtitle' }> => a.type === 'Subtitle');
+		const chapterItems = data.filter((a): a is Extract<DownloadedMedia, { type: 'Chapter' }> => a.type === 'Chapter');
 		const merger = new Merger({
 			onlyVid: hasAudioStreams
 				? videoItems.map((a): MergerInput => ({ lang: a.lang, path: a.path }))
@@ -1133,6 +1210,9 @@ export default class Hidive {
 				language: a.language,
 				closedCaption: a.cc
 			})),
+			chapters: chapterItems.length > 0
+				? chapterItems.map((a): MergerInput => ({ lang: a.lang, path: a.path }))
+				: undefined,
 			simul: videoItems.map((a): boolean => !a.uncut as boolean)[0],
 			fonts: Merger.makeFontsList(this.cfg.dir.fonts, subtitleItems as sxItem[]),
 			videoAndAudio: hasAudioStreams

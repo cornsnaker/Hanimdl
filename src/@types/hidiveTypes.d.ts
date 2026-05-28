@@ -78,4 +78,9 @@ export type DownloadedMedia =
 	| ({
 			type: 'Subtitle';
 			cc: boolean;
-	  } & sxItem);
+	  } & sxItem)
+	| {
+			type: 'Chapter';
+			path: string;
+			lang: LanguageItem;
+	  };

@@ -249,6 +249,18 @@ const args: TAppArg<boolean | number | string | unknown[]>[] = [
 		usage: ''
 	},
 	{
+		name: 'chapters',
+		describe: 'Include chapter markers from skip events (intro/outro) in the output',
+		docDescribe: true,
+		group: 'dl',
+		service: ['hidive'],
+		default: {
+			default: true
+		},
+		type: 'boolean',
+		usage: ''
+	},
+	{
 		name: 'fontSize',
 		describe: 'Used to set the font size of the subtitles',
 		default: {

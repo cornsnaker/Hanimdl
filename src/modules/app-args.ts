@@ -62,6 +62,7 @@ export let argvC: {
 	_: (string | number)[];
 	$0: string;
 	removeBumpers: boolean;
+	chapters: boolean;
 	originalFontSize: boolean;
 	keepAllVideos: boolean;
 	syncTiming: boolean;

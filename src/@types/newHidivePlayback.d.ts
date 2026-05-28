@@ -1,6 +1,12 @@
+export interface SkipMarker {
+	from: number;
+	to: number;
+	type: string;
+}
+
 export interface NewHidivePlayback {
 	watermark: null;
-	skipMarkers: any[];
+	skipMarkers: SkipMarker[];
 	annotations: null;
 	dash: Format[];
 	hls: Format[];
